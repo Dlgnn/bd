@@ -1,41 +1,21 @@
-// src/app.js
 import express from "express";
-import {
-  searchByTitle,
-  getBooksFromDb,
-  getBookOrThrow
-} from "./books.js";
+import booksRouter from "./routes/books.router.js";
+import { logger } from "./middlewares/logger.js";
+import { notFound, errorHandler } from "./middlewares/error.js";
 
 const app = express();
 const PORT = 3000;
 
-app.get("/", (req, res) => {
-  res.json({ message: "Library API", version: "1.0.0" });
-});
+// Body parser болон logger middleware
+app.use(express.json());
+app.use(logger);
 
-// GET /books (Async/Await болон query хайлт)[cite: 100, 102]
-app.get("/books", async (req, res) => {
-  const q = req.query.q;
-  if (q) {
-    return res.json(searchByTitle(q));
-  }
-  
-  const booksFromDb = await getBooksFromDb();
-  res.json(booksFromDb);
-});
+// Router холбох (/books префикс)
+app.use("/books", booksRouter);
 
-// GET /books/:id (Try/Catch ба 404 алдаа барих)[cite: 100, 103]
-app.get("/books/:id", (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const book = getBookOrThrow(id);
-    res.json(book);
-  } catch (error) {
-    res.status(404).json({
-      message: error.message
-    });
-  }
-});
+// 404 болон Global Error Handler (Үргэлж хамгийн доор байх ёстой)
+app.use(notFound);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
